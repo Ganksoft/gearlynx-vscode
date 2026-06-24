@@ -8,7 +8,7 @@ this repository. Human contributors may also find it useful.
 **LynxDebug** is a Visual Studio Code extension: a source-level debugger for Atari
 Lynx games built with the [cc65](https://cc65.github.io/) toolchain. It implements
 the Debug Adapter Protocol (DAP) and drives the
-[Gearlynx](https://github.com/BrianPeek/Gearlynx) emulator over TCP.
+[Gearlynx](https://github.com/DrHelius/Gearlynx) emulator over TCP.
 
 - Language: **TypeScript** (compiled to `out/` via `tsc`).
 - Runtime: VSCode extension host (Node). Engine: VSCode `^1.87.0`.

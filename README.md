@@ -3,12 +3,12 @@
 > [!WARNING]
 > **Not usable yet.** This extension depends on Gearlynx's debug-monitor support
 > (the `--debug-monitor` interface and protocol handshake), which currently lives
-> only on the `feature/vscplugin` branch of [Gearlynx](https://github.com/BrianPeek/Gearlynx)
+> only on the `feature/vscplugin` branch of [Gearlynx](https://github.com/DrHelius/Gearlynx)
 > and has **not** been merged into a released build. Until those changes land in
 > mainline Gearlynx, the extension cannot connect to the emulator and is not
 > functional. Published here for development and review only.
 
-A Visual Studio Code debugger extension for Atari Lynx games using the [Gearlynx](https://github.com/BrianPeek/Gearlynx) emulator. Supports C and 6502 assembly source-level debugging for games compiled with [cc65](https://cc65.github.io/).
+A Visual Studio Code debugger extension for Atari Lynx games using the [Gearlynx](https://github.com/DrHelius/Gearlynx) emulator. Supports C and 6502 assembly source-level debugging for games compiled with [cc65](https://cc65.github.io/).
 
 ![Gearlynx Debugger debugging an Atari Lynx game in VSCode: live screen viewer, CPU registers, watch expressions, call stack, and a source breakpoint](images/glvs-sample.png)
 
@@ -70,13 +70,13 @@ A Visual Studio Code debugger extension for Atari Lynx games using the [Gearlynx
 
 ## Requirements
 
-- [Gearlynx](https://github.com/BrianPeek/Gearlynx) emulator built with `--debug-monitor` support
+- [Gearlynx](https://github.com/DrHelius/Gearlynx) emulator built with `--debug-monitor` support
 - [cc65](https://cc65.github.io/) toolchain for compiling Lynx games with debug info
 - VSCode 1.87.0 or later
 
 ## Installing Gearlynx
 
-Gearlynx Debugger does not bundle the emulator. Install [Gearlynx](https://github.com/BrianPeek/Gearlynx)
+Gearlynx Debugger does not bundle the emulator. Install [Gearlynx](https://github.com/DrHelius/Gearlynx)
 separately, then tell the extension where it is via the `lynxDebug.gearlynxPath`
 setting (or the per-launch `gearlynxPath` attribute):
 
@@ -104,7 +104,7 @@ The extension and the emulator negotiate a debug-monitor **protocol version** on
 connect. Gearlynx Debugger 0.1.x speaks **protocol version 1**; it requires a Gearlynx
 build whose `handshake` reports the same version. On a mismatch the extension
 warns but still attempts to debug. The wire format and CLI surface are documented
-in [PROTOCOL.md](https://github.com/BrianPeek/Gearlynx/blob/main/PROTOCOL.md) in
+in [PROTOCOL.md](https://github.com/DrHelius/Gearlynx/blob/main/PROTOCOL.md) in
 the Gearlynx repository.
 
 | Gearlynx Debugger | Debug-monitor protocol | Gearlynx |

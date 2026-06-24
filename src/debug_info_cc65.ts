@@ -151,6 +151,7 @@ export class Cc65DebugInfo {
 
     private static resolve(data: DbgData, _sourceRoots: string[]): DebugInfoData {
         const addressToSource = new Map<number, SourceLocation>();
+        const cLineAddrs = new Set<number>();
         const sourceToAddresses = new Map<string, Map<number, number[]>>();
         const symbols: DebugSymbol[] = [];
         const functions: DebugFunction[] = [];
@@ -245,10 +246,28 @@ export class Cc65DebugInfo {
                     segmentId: span.seg,
                 };
 
-                // Prefer C lines (type 0 or undefined) over assembly lines (type 1)
+                // Prefer high-level C source lines over assembly. In cc65 .dbg
+                // files, line type 1 is the C source line; type 0/undefined is
+                // assembly and type 2 is a macro. Multiple line records (C plus
+                // generated/runtime assembly such as bootldr.s) can map to the
+                // same address; the assembly ones often point at cc65 runtime
+                // files that are not on the user's disk. A C mapping must never
+                // be overwritten by an assembly mapping, or the address resolves
+                // to a missing file and reports as unmapped.
                 const existing = addressToSource.get(addr);
-                const isCLine = (line.type === undefined || line.type === 0);
-                if (!existing || isCLine) {
+                const isCLine = (line.type === 1);
+                if (!existing) {
+                    addressToSource.set(addr, loc);
+                    if (isCLine) {
+                        cLineAddrs.add(addr);
+                    }
+                } else if (isCLine) {
+                    // C always wins (and a later C line replaces an earlier one).
+                    addressToSource.set(addr, loc);
+                    cLineAddrs.add(addr);
+                } else if (!cLineAddrs.has(addr)) {
+                    // Assembly over assembly: keep last-writer behavior, but never
+                    // clobber an address already claimed by a C line.
                     addressToSource.set(addr, loc);
                 }
 
@@ -429,7 +448,7 @@ export class Cc65DebugInfo {
             // Decode value
             if (v.length >= 2 && v[0] === '"' && v[v.length - 1] === '"') {
                 attrs.set(k, v.substring(1, v.length - 1));
-            } else if (k === 'name' || k === 'type' || k === 'addrsize' || k === 'sc' || k === 'oname') {
+            } else if (k === 'name' || k === 'addrsize' || k === 'sc' || k === 'oname') {
                 attrs.set(k, v);
             } else if (v.indexOf('+') >= 0) {
                 // Array of numbers (span references like "0+5")
