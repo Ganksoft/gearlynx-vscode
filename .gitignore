@@ -1,3 +1,6 @@
 out/
 node_modules/
 *.vsix
+
+# Machine-specific VSCode settings (contains a local Node path); keep launch.json/tasks.json tracked
+.vscode/settings.json

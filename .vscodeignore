@@ -14,5 +14,8 @@ package-lock.json
 out/**/*.map
 out/**/*.d.ts
 
+# README screenshot (Marketplace renders it from the GitHub raw URL, no need to ship it)
+images/glvs-sample.png
+
 # Misc
 **/.DS_Store

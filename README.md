@@ -2,6 +2,8 @@
 
 A Visual Studio Code debugger extension for Atari Lynx games using the [Gearlynx](https://github.com/BrianPeek/Gearlynx) emulator. Supports C and 6502 assembly source-level debugging for games compiled with [cc65](https://cc65.github.io/).
 
+![LynxDebug debugging an Atari Lynx game in VSCode: live screen viewer, CPU registers, watch expressions, call stack, and a source breakpoint](images/glvs-sample.png)
+
 ## Features
 
 ### Debugging
