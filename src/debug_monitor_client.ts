@@ -71,7 +71,7 @@ export class DebugMonitorClient extends EventEmitter {
             this.socket = null;
         }
         // Reject all pending requests
-        for (const [id, pending] of this.pendingRequests) {
+        for (const pending of this.pendingRequests.values()) {
             pending.reject(new Error('Disconnected'));
         }
         this.pendingRequests.clear();
@@ -84,7 +84,9 @@ export class DebugMonitorClient extends EventEmitter {
     // -- Typed command methods --
 
     async handshake(): Promise<HandshakeInfo> {
-        const resp = await this.sendCommand('handshake');
+        // Short timeout: a pre-v1 emulator that ignores the unknown command should
+        // not stall launch/attach for the full default request timeout.
+        const resp = await this.sendCommand('handshake', {}, 2000);
         return {
             protocolVersion: (resp.data['protocolVersion'] as number) ?? 0,
             emulatorVersion: (resp.data['emulatorVersion'] as string) ?? 'unknown',
@@ -200,7 +202,7 @@ export class DebugMonitorClient extends EventEmitter {
 
     // -- Low-level send/receive --
 
-    private async sendCommand(cmd: string, params: Record<string, unknown> = {}): Promise<MonitorResponse> {
+    private async sendCommand(cmd: string, params: Record<string, unknown> = {}, timeoutMs: number = 10000): Promise<MonitorResponse> {
         if (!this.connected || !this.socket) {
             throw new Error('Not connected');
         }
@@ -214,7 +216,7 @@ export class DebugMonitorClient extends EventEmitter {
             const timeout = setTimeout(() => {
                 this.pendingRequests.delete(id);
                 reject(new Error(`Request timeout: ${cmd}`));
-            }, 10000);
+            }, timeoutMs);
 
             this.pendingRequests.set(id, {
                 resolve: (resp) => {
@@ -253,7 +255,7 @@ export class DebugMonitorClient extends EventEmitter {
     }
 
     private rejectAllPending(reason: string): void {
-        for (const [id, pending] of this.pendingRequests) {
+        for (const pending of this.pendingRequests.values()) {
             pending.reject(new Error(reason));
         }
         this.pendingRequests.clear();

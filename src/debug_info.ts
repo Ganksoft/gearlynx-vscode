@@ -166,7 +166,7 @@ export class DebugInfo {
     private findNearestInMap(
         map: Map<number, number[]>,
         targetLine: number,
-        sourcePath: string
+        _sourcePath: string
     ): SourceLocation | null {
         // Exact line match
         const addrs = map.get(targetLine);

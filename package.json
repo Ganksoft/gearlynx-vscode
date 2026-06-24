@@ -282,7 +282,8 @@
     "publish": "vsce publish"
   },
   "dependencies": {
-    "@vscode/debugadapter": "^1.68.0"
+    "@vscode/debugadapter": "^1.68.0",
+    "@vscode/debugprotocol": "^1.68.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
