@@ -1,4 +1,4 @@
-# LynxDebug - Atari Lynx Source-Level Debugger
+# Gearlynx Debugger - Atari Lynx Source-Level Debugger
 
 > [!WARNING]
 > **Not usable yet.** This extension depends on Gearlynx's debug-monitor support
@@ -10,7 +10,7 @@
 
 A Visual Studio Code debugger extension for Atari Lynx games using the [Gearlynx](https://github.com/BrianPeek/Gearlynx) emulator. Supports C and 6502 assembly source-level debugging for games compiled with [cc65](https://cc65.github.io/).
 
-![LynxDebug debugging an Atari Lynx game in VSCode: live screen viewer, CPU registers, watch expressions, call stack, and a source breakpoint](images/glvs-sample.png)
+![Gearlynx Debugger debugging an Atari Lynx game in VSCode: live screen viewer, CPU registers, watch expressions, call stack, and a source breakpoint](images/glvs-sample.png)
 
 ## Features
 
@@ -76,7 +76,7 @@ A Visual Studio Code debugger extension for Atari Lynx games using the [Gearlynx
 
 ## Installing Gearlynx
 
-LynxDebug does not bundle the emulator. Install [Gearlynx](https://github.com/BrianPeek/Gearlynx)
+Gearlynx Debugger does not bundle the emulator. Install [Gearlynx](https://github.com/BrianPeek/Gearlynx)
 separately, then tell the extension where it is via the `lynxDebug.gearlynxPath`
 setting (or the per-launch `gearlynxPath` attribute):
 
@@ -101,19 +101,19 @@ the extension at the host/port.
 ### Version compatibility
 
 The extension and the emulator negotiate a debug-monitor **protocol version** on
-connect. LynxDebug 0.1.x speaks **protocol version 1**; it requires a Gearlynx
+connect. Gearlynx Debugger 0.1.x speaks **protocol version 1**; it requires a Gearlynx
 build whose `handshake` reports the same version. On a mismatch the extension
 warns but still attempts to debug. The wire format and CLI surface are documented
 in [PROTOCOL.md](https://github.com/BrianPeek/Gearlynx/blob/main/PROTOCOL.md) in
 the Gearlynx repository.
 
-| LynxDebug | Debug-monitor protocol | Gearlynx |
+| Gearlynx Debugger | Debug-monitor protocol | Gearlynx |
 |-----------|------------------------|----------|
 | 0.1.x     | 1                      | builds reporting protocolVersion 1 |
 
 ## Quick Start
 
-1. Install the LynxDebug extension from the Marketplace, or package it locally with `npm run package` and install the resulting `.vsix`.
+1. Install the Gearlynx Debugger extension from the Marketplace, or package it locally with `npm run package` and install the resulting `.vsix`.
 2. Set the Gearlynx executable path in VSCode settings: `lynxDebug.gearlynxPath`
 3. Compile your cc65 Lynx game with debug info:
    ```bash
@@ -260,7 +260,7 @@ Provides symbol names and addresses only (no source-line mapping, no locals, no 
 ```
 VSCode                              Gearlynx
 +-------------------+   TCP/JSON     +---------------------+
-| LynxDebug         | <------------> | Debug Monitor       |
+| Gearlynx Debugger | <------------> | Debug Monitor       |
 | (DAP adapter)     |   port 6502    | Server              |
 +-------------------+                +---------------------+
 |                   |   TCP/binary   | Framebuffer         |
