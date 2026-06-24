@@ -33,20 +33,17 @@ Compiled output (`out/`) and `node_modules/` are git-ignored; never commit them.
 
 ## Build, lint, and test commands
 
-This machine has no `node` on PATH; a portable Node lives at
-`C:\Users\brian\Downloads\node-v25.9.0-win-x64`. Prepend it and use `npm.cmd`
-(`npm.ps1` is blocked by execution policy):
+Requires **Node 24 (LTS)** with `node`/`npm` on PATH:
 
 ```powershell
-$env:PATH = "C:\Users\brian\Downloads\node-v25.9.0-win-x64;$env:PATH"
-npm.cmd install        # install deps (first time / after package.json changes)
-npm.cmd run compile    # tsc type-check + emit to out/  (MUST pass)
-npm.cmd run lint       # eslint src/  (MUST pass with 0 errors; warnings OK)
-npm.cmd run package    # build a .vsix locally
+npm install        # install deps (first time / after package.json changes)
+npm run compile    # tsc type-check + emit to out/  (MUST pass)
+npm run lint       # eslint src/  (MUST pass with 0 errors; warnings OK)
+npm run package    # build a .vsix locally
 ```
 
-CI pins **Node 20** with `npm ci`. If you regenerate `package-lock.json`, prefer
-doing it on Node 20 for parity.
+CI pins **Node 24** with `npm ci`. If you regenerate `package-lock.json`, prefer
+doing it on Node 24 for parity.
 
 Manual test: open the folder in VSCode and press **F5** to launch an Extension
 Development Host, then debug a Lynx project in the new window.
