@@ -35,6 +35,7 @@ interface DbgSym {
     id: number;
     name: string;
     val?: number;
+    size?: number;
     seg?: number;
     scope?: number;
     type?: string;
@@ -135,7 +136,7 @@ export class Cc65DebugInfo {
                     data.lines.push({ id: num(a, 'id'), file: num(a, 'file'), line: num(a, 'line'), span: numOrArr(a, 'span'), type: optNum(a, 'type') });
                     break;
                 case 'sym':
-                    data.syms.push({ id: num(a, 'id'), name: str(a, 'name'), val: optNum(a, 'val'), seg: optNum(a, 'seg'), scope: optNum(a, 'scope'), type: optStr(a, 'type') });
+                    data.syms.push({ id: num(a, 'id'), name: str(a, 'name'), val: optNum(a, 'val'), size: optNum(a, 'size'), seg: optNum(a, 'seg'), scope: optNum(a, 'scope'), type: optStr(a, 'type') });
                     break;
                 case 'scope':
                     data.scopes.push({ id: num(a, 'id'), name: str(a, 'name'), mod: optNum(a, 'mod'), parent: optNum(a, 'parent'), span: numOrArr(a, 'span'), size: optNum(a, 'size') });
@@ -350,24 +351,24 @@ export class Cc65DebugInfo {
                 const sym = data.syms[csym.sym];
                 const scope = data.scopes[csym.scope];
                 if (sym && scope && sym.val !== undefined) {
-                    const spanIds = Cc65DebugInfo.toArray(scope.span);
-                    if (spanIds.length > 0) {
-                        const span = spanMap.get(spanIds[0]);
-                        if (span && span.address !== undefined) {
-                            const loc = addressToSource.get(span.address);
-                            functions.push({
-                                name: csym.name,
-                                address: span.address,
-                                addressEnd: span.address + span.size - 1,
-                                source: loc?.source || '',
-                                line: loc?.line || 0,
-                            });
-                            scopeFunctionMap.set(csym.scope, {
-                                address: span.address,
-                                endAddress: span.address + span.size - 1,
-                            });
-                        }
-                    }
+                    // Function address range comes from the symbol (val + size),
+                    // not the scope's first span: a function scope can list
+                    // multiple spans and span[0] may be a non-code span (e.g. a
+                    // string constant in RODATA), which would register the
+                    // function at a bogus address and break locals/stack lookups.
+                    const size = sym.size ?? scope.size;
+                    if (size === undefined) continue;
+                    const address = sym.val;
+                    const endAddress = address + size - 1;
+                    const loc = addressToSource.get(address);
+                    functions.push({
+                        name: csym.name,
+                        address,
+                        addressEnd: endAddress,
+                        source: loc?.source || '',
+                        line: loc?.line || 0,
+                    });
+                    scopeFunctionMap.set(csym.scope, { address, endAddress });
                 }
             }
         }
@@ -412,7 +413,9 @@ export class Cc65DebugInfo {
                     scopeId: csym.scope,
                     functionAddress: funcScope.address,
                     functionEndAddress: funcScope.endAddress,
-                    stackOffset: csym.offs,
+                    // cc65 omits offs from the text when it is 0 (e.g. the last
+                    // parameter), so a missing offset means 0, not "unknown".
+                    stackOffset: csym.offs ?? 0,
                     stackPointerOffset: maxStackOffset,
                 });
             }

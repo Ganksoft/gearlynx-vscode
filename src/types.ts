@@ -87,7 +87,7 @@ export interface LocalVariable {
     scopeId: number;
     functionAddress: number;
     functionEndAddress: number;
-    stackOffset: number | undefined;
+    stackOffset: number;
     stackPointerOffset: number;
 }
 

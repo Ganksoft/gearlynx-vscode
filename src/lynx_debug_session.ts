@@ -70,7 +70,7 @@ export class LynxDebugSession extends LoggingDebugSession {
     private sourceStepCount = 0;
     private sourceStepStopReason = '';
     private traceSteps = false;
-    private static readonly SOURCE_STEP_MAX = 500;
+    private static readonly SOURCE_STEP_MAX = 100;
 
     public constructor() {
         super('lynxdebug-adapter.log');
@@ -581,26 +581,21 @@ export class LynxDebugSession extends LoggingDebugSession {
         const stackPtr = spLo | (spHi << 8);
 
         for (const local of localVars) {
-            if (local.stackOffset !== undefined) {
-                // Has stack offset -- read value from stack
-                const addr = stackPtr + local.stackPointerOffset + local.stackOffset;
-                try {
-                    const hex = await this.monitor.getMemory(0, addr & 0xFFFF, 2);
-                    const lo = parseInt(hex.substring(0, 2), 16);
-                    const hi = parseInt(hex.substring(2, 4), 16);
-                    const word = lo | (hi << 8);
-                    const addrStr = `$${(addr & 0xFFFF).toString(16).toUpperCase().padStart(4, '0')}`;
-                    variables.push(new Variable(
-                        local.name,
-                        `$${lo.toString(16).toUpperCase().padStart(2, '0')} (${lo}) [w:$${word.toString(16).toUpperCase().padStart(4, '0')}] @${addrStr}`,
-                        0
-                    ));
-                } catch {
-                    variables.push(new Variable(local.name, '<unavailable>', 0));
-                }
-            } else {
-                // No stack offset -- show as known local without value
-                variables.push(new Variable(local.name, '<no offset info>', 0));
+            // Has stack offset -- read value from stack
+            const addr = stackPtr + local.stackPointerOffset + local.stackOffset;
+            try {
+                const hex = await this.monitor.getMemory(0, addr & 0xFFFF, 2);
+                const lo = parseInt(hex.substring(0, 2), 16);
+                const hi = parseInt(hex.substring(2, 4), 16);
+                const word = lo | (hi << 8);
+                const addrStr = `$${(addr & 0xFFFF).toString(16).toUpperCase().padStart(4, '0')}`;
+                variables.push(new Variable(
+                    local.name,
+                    `$${lo.toString(16).toUpperCase().padStart(2, '0')} (${lo}) [w:$${word.toString(16).toUpperCase().padStart(4, '0')}] @${addrStr}`,
+                    0
+                ));
+            } catch {
+                variables.push(new Variable(local.name, '<unavailable>', 0));
             }
         }
     }
