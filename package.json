@@ -46,11 +46,6 @@
         "icon": "$(layers)"
       },
       {
-        "command": "gearlynxDebug.showScreen",
-        "title": "Show Screen Viewer",
-        "category": "Gearlynx Debugger"
-      },
-      {
         "command": "gearlynxDebug.showMemoryMap",
         "title": "Show Memory Map",
         "category": "Gearlynx Debugger"
@@ -97,6 +92,12 @@
       ]
     },
     "menus": {
+      "commandPalette": [
+        {
+          "command": "gearlynxDebug.selectOverlay",
+          "when": "debugType == 'gearlynx' && gearlynxDebug.hasOverlays"
+        }
+      ],
       "debug/toolBar": [
         {
           "command": "gearlynxDebug.selectOverlay",
@@ -234,11 +235,6 @@
           "type": "number",
           "default": 6502,
           "description": "Default debug monitor port"
-        },
-        "gearlynxDebug.autoOpenScreen": {
-          "type": "boolean",
-          "default": false,
-          "description": "Automatically open the Screen Viewer when a debug session starts"
         },
         "gearlynxDebug.keymap.up": {
           "type": "string",

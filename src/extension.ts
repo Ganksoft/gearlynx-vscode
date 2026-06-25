@@ -1,10 +1,9 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { LynxDebugSession } from './lynx_debug_session';
-import { ScreenViewerPanel, ScreenViewProvider, connectSharedStream, disconnectSharedStream } from './webviews';
+import { ScreenViewProvider, connectSharedStream, disconnectSharedStream } from './webviews';
 import { MemoryMapPanel } from './memory_map';
 
-let overlayStatusBarItem: vscode.StatusBarItem | undefined;
 let activeSession: LynxDebugSession | undefined;
 let screenViewProvider: ScreenViewProvider | undefined;
 let overlayTreeProvider: OverlayTreeProvider | undefined;
@@ -29,7 +28,7 @@ export function activate(context: vscode.ExtensionContext): void {
         })
     );
 
-    // Overlay tree view (panel) -- mirrors the status bar / toolbar selector.
+    // Overlay tree view (panel) -- mirrors the debug toolbar selector.
     overlayTreeProvider = new OverlayTreeProvider();
     context.subscriptions.push(
         vscode.window.registerTreeDataProvider('gearlynxDebug.overlayView', overlayTreeProvider)
@@ -77,17 +76,6 @@ export function activate(context: vscode.ExtensionContext): void {
             if (picked) {
                 selectOverlay(picked.label === NONE_LABEL ? null : picked.label);
             }
-        })
-    );
-
-    // Screen viewer command
-    context.subscriptions.push(
-        vscode.commands.registerCommand('gearlynxDebug.showScreen', () => {
-            if (!activeSession) {
-                vscode.window.showInformationMessage('No active Lynx debug session.');
-                return;
-            }
-            ScreenViewerPanel.show(context.extensionUri, activeSession.getMonitor());
         })
     );
 
@@ -147,16 +135,10 @@ export function activate(context: vscode.ExtensionContext): void {
         })
     );
 
-    // Status bar item
-    overlayStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
-    overlayStatusBarItem.command = 'gearlynxDebug.selectOverlay';
-    context.subscriptions.push(overlayStatusBarItem);
-
-    // Show/hide status bar based on debug session
+    // Show/hide overlay UI based on debug session
     context.subscriptions.push(
         vscode.debug.onDidStartDebugSession((session) => {
             if (session.type === 'gearlynx') {
-                updateOverlayStatusBar(null);
                 syncOverlayUi();
 
                 if (activeSession) {
@@ -170,14 +152,6 @@ export function activate(context: vscode.ExtensionContext): void {
                             screenViewProvider.setConnection(monitor);
                         }
                     }, 1000);
-
-                    // Auto-open floating panel if setting enabled
-                    const cfg = vscode.workspace.getConfiguration('gearlynxDebug');
-                    if (cfg.get<boolean>('autoOpenScreen', false)) {
-                        setTimeout(() => {
-                            ScreenViewerPanel.show(context.extensionUri, monitor);
-                        }, 1000);
-                    }
                 }
             }
         })
@@ -185,7 +159,6 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         vscode.debug.onDidTerminateDebugSession((session) => {
             if (session.type === 'gearlynx') {
-                overlayStatusBarItem?.hide();
                 disconnectSharedStream();
                 screenViewProvider?.clearConnection();
                 activeSession = undefined;
@@ -195,26 +168,9 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 }
 
-function updateOverlayStatusBar(overlayName: string | null): void {
-    if (!overlayStatusBarItem) return;
-    if (!activeSession) {
-        overlayStatusBarItem.hide();
-        return;
-    }
-    const debugInfo = activeSession.getDebugInfo();
-    if (!debugInfo || !debugInfo.hasOverlays()) {
-        overlayStatusBarItem.hide();
-        return;
-    }
-    const name = overlayName || debugInfo.getActiveOverlayName() || 'Select Overlay';
-    overlayStatusBarItem.text = `$(layers) Lynx: ${name}`;
-    overlayStatusBarItem.tooltip = 'Click to select active code overlay';
-    overlayStatusBarItem.show();
-}
-
-// Single source of truth for changing the active overlay. Every surface (status
-// bar quickpick, debug-toolbar button, panel tree) routes through here, so they
-// can never drift out of sync: each just re-reads getActiveOverlayName().
+// Single source of truth for changing the active overlay. Every surface (the
+// debug-toolbar quickpick button and the panel tree) routes through here, so
+// they can never drift out of sync: each just re-reads getActiveOverlayName().
 function selectOverlay(name: string | null): void {
     const debugInfo = activeSession?.getDebugInfo();
     if (!debugInfo) return;
@@ -223,7 +179,6 @@ function selectOverlay(name: string | null): void {
     } else {
         debugInfo.setActiveOverlay(name);
     }
-    updateOverlayStatusBar(name);
     overlayTreeProvider?.refresh();
     // Re-emit stopped event so VSCode re-queries the stack trace and
     // repositions the editor to the correct source line.
@@ -231,26 +186,19 @@ function selectOverlay(name: string | null): void {
 }
 
 // Refresh overlay UI for the current session: toolbar/tree visibility context
-// key, status bar, and tree contents.
+// key and tree contents.
 function syncOverlayUi(): void {
     const hasOverlays = activeSession?.getDebugInfo()?.hasOverlays() ?? false;
     void vscode.commands.executeCommand('setContext', 'gearlynxDebug.hasOverlays', hasOverlays);
-    updateOverlayStatusBar(activeSession?.getDebugInfo()?.getActiveOverlayName() || null);
     overlayTreeProvider?.refresh();
 }
 
 export function setActiveSession(session: LynxDebugSession | undefined): void {
     activeSession = session;
-    if (session) {
-        const debugInfo = session.getDebugInfo();
-        updateOverlayStatusBar(debugInfo?.getActiveOverlayName() || null);
-    }
     syncOverlayUi();
 }
 
 export function deactivate(): void {
-    overlayStatusBarItem?.dispose();
-    overlayStatusBarItem = undefined;
     activeSession = undefined;
 }
 

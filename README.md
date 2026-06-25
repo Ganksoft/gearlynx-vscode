@@ -51,14 +51,13 @@ A Visual Studio Code debugger extension for Atari Lynx games using the [Gearlynx
 ### Overlays
 
 - **Overlay detection** from cc65 banked ROM segments sharing the same address range
-- **Overlay selector** in the status bar for switching active overlay at runtime
+- **Overlay selector** in the debug toolbar and a panel tree for switching active overlay at runtime
 - Source resolution respects the active overlay (only shows code from the selected bank)
 
 ### Screen Viewer
 
 - **Live screen streaming** at 60fps via raw TCP binary stream
-- **Persistent panel** in the VSCode bottom panel (survives editor restarts)
-- **Floating viewer** via the `Gearlynx Debugger: Show Screen Viewer` command
+- **Dockable panel view** that can be dragged, floated, or docked anywhere; with a scale control (Fit, plus 1x-5x integer scaling for crisp pixels)
 - **Gamepad input** through the screen viewer (keyboard events forwarded to emulator)
 - Auto-connects when a debug session starts, auto-disconnects when it ends
 
@@ -204,7 +203,6 @@ gearlynx --debug-monitor --debug-monitor-port 7000 game.lnx
 |---------|---------|-------------|
 | `gearlynxDebug.gearlynxPath` | `""` | Path to Gearlynx executable |
 | `gearlynxDebug.defaultPort` | `6502` | Default debug monitor TCP port |
-| `gearlynxDebug.autoOpenScreen` | `false` | Automatically open the floating Screen Viewer on session start |
 
 ### Keymap Settings
 
@@ -229,7 +227,6 @@ All commands are available via the Command Palette (`Ctrl+Shift+P`):
 | Command | Description |
 |---------|-------------|
 | `Gearlynx Debugger: Select Active Overlay` | Switch the active ROM overlay/bank segment |
-| `Gearlynx Debugger: Show Screen Viewer` | Open a floating screen viewer window |
 | `Gearlynx Debugger: Show Memory Map` | Open the memory map visualization |
 | `Gearlynx Debugger: Start Trace Logger` | Begin CPU instruction trace logging |
 | `Gearlynx Debugger: Stop Trace Logger` | Stop trace logging |
@@ -282,7 +279,7 @@ VSCode                              Gearlynx
 - **Local variables**: cc65 often omits stack offsets for local `auto` variables in its debug info. Locals without offset info appear with address-only values.
 - **Intermediate files**: cc65-generated assembly files (`.s`, `.mac`, `.inc` intermediates) are automatically filtered from source resolution.
 - **Step back**: Uses Gearlynx's rewind feature and operates at frame granularity (one full frame per step-back), not instruction-level.
-- **Overlay selection**: Only one overlay bank is active at a time. Source resolution and globals display reflect the selected overlay. Switch overlays via the status bar selector (only appears when overlays are detected in the debug info).
+- **Overlay selection**: Only one overlay bank is active at a time. Source resolution and globals display reflect the selected overlay. Switch overlays via the debug toolbar button or the Overlays panel tree (both only appear when overlays are detected in the debug info). With no overlay selected the address space is ambiguous; select the bank that is currently resident.
 - **Headless mode**: Audio is active in headless mode. The Screen Viewer in VSCode provides the display.
 - **Path matching**: Source file paths are matched case-insensitively on Windows.
 
