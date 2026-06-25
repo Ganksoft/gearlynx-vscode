@@ -15,10 +15,6 @@ export class MemoryMapPanel {
         MemoryMapPanel.instance = new MemoryMapPanel(segments);
     }
 
-    public static dispose(): void {
-        MemoryMapPanel.instance?.panel.dispose();
-    }
-
     private constructor(segments: SegmentInfo[]) {
         this.panel = vscode.window.createWebviewPanel(
             MemoryMapPanel.viewType,

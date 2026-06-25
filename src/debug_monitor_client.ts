@@ -6,9 +6,7 @@ import {
     MonitorEvent,
     MonitorMessage,
     CpuRegisters,
-    BreakpointInfo,
     DisasmLine,
-    MemoryAreaInfo,
     DebugStatus,
     HandshakeInfo,
 } from './types';
@@ -119,11 +117,6 @@ export class DebugMonitorClient extends EventEmitter {
         await this.sendCommand('breakpoint_delete', { address });
     }
 
-    async listBreakpoints(): Promise<BreakpointInfo[]> {
-        const resp = await this.sendCommand('breakpoint_list');
-        return resp.data['breakpoints'] as unknown as BreakpointInfo[];
-    }
-
     async continue_(): Promise<void> {
         await this.sendCommand('continue');
     }
@@ -142,10 +135,6 @@ export class DebugMonitorClient extends EventEmitter {
 
     async stepOut(): Promise<void> {
         await this.sendCommand('step_out');
-    }
-
-    async stepFrame(): Promise<void> {
-        await this.sendCommand('step_frame');
     }
 
     async reset(): Promise<void> {
@@ -170,11 +159,6 @@ export class DebugMonitorClient extends EventEmitter {
     async getCallStack(): Promise<Record<string, unknown>> {
         const resp = await this.sendCommand('call_stack');
         return resp.data;
-    }
-
-    async getMemoryAreas(): Promise<MemoryAreaInfo[]> {
-        const resp = await this.sendCommand('memory_areas');
-        return resp.data['areas'] as unknown as MemoryAreaInfo[];
     }
 
     async getHardwareStatus(): Promise<Record<string, unknown>> {

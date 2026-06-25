@@ -31,16 +31,6 @@ export interface CpuRegisters {
     halted: boolean;
 }
 
-export interface BreakpointInfo {
-    address1: number;
-    address2: number;
-    enabled: boolean;
-    read: boolean;
-    write: boolean;
-    execute: boolean;
-    range: boolean;
-}
-
 export interface DisasmLine {
     address: number;
     name: string;
@@ -49,13 +39,6 @@ export interface DisasmLine {
     jump: boolean;
     jump_address: number;
     subroutine: boolean;
-}
-
-export interface MemoryAreaInfo {
-    id: number;
-    name: string;
-    size: number;
-    cpu_offset: number;
 }
 
 export interface DebugStatus {

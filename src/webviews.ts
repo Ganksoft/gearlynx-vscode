@@ -22,6 +22,25 @@ export function disconnectSharedStream(): void {
     }
 }
 
+// Shared controller-key handling -- both the floating panel and the sidebar
+// view read the same keymap setting and forward presses to the emulator.
+function loadKeymap(): Map<string, string> {
+    const cfg = vscode.workspace.getConfiguration('gearlynxDebug.keymap');
+    const map = new Map<string, string>();
+    for (const btn of ['up', 'down', 'left', 'right', 'a', 'b', 'option1', 'option2', 'pause']) {
+        const key = cfg.get<string>(btn, '');
+        if (key) map.set(key, btn);
+    }
+    return map;
+}
+
+async function sendKeyInput(monitor: DebugMonitorClient | null, keymap: Map<string, string>, key: string, action: string): Promise<void> {
+    if (!monitor || !monitor.isConnected()) return;
+    const button = keymap.get(key);
+    if (!button) return;
+    try { await monitor.controllerButton(button, action); } catch { /* ignore */ }
+}
+
 export class ScreenViewerPanel {
     public static readonly viewType = 'gearlynxDebug.screenViewer';
     private static instance: ScreenViewerPanel | undefined;
@@ -41,13 +60,9 @@ export class ScreenViewerPanel {
         ScreenViewerPanel.instance = new ScreenViewerPanel(extensionUri, monitor);
     }
 
-    public static dispose(): void {
-        ScreenViewerPanel.instance?.panel.dispose();
-    }
-
     private constructor(_extensionUri: vscode.Uri, monitor: DebugMonitorClient) {
         this.monitor = monitor;
-        this.loadKeymap();
+        this.keymap = loadKeymap();
 
         this.panel = vscode.window.createWebviewPanel(
             ScreenViewerPanel.viewType,
@@ -64,7 +79,7 @@ export class ScreenViewerPanel {
 
         this.panel.webview.onDidReceiveMessage(async (msg) => {
             if (msg.command === 'keydown' || msg.command === 'keyup') {
-                await this.handleKeyInput(msg.key, msg.command === 'keydown' ? 'press' : 'release');
+                await sendKeyInput(this.monitor, this.keymap, msg.key, msg.command === 'keydown' ? 'press' : 'release');
             }
         });
 
@@ -96,22 +111,6 @@ export class ScreenViewerPanel {
         if (this.statusHandler) stream.off('status', this.statusHandler);
         this.frameHandler = null;
         this.statusHandler = null;
-    }
-
-    private loadKeymap(): void {
-        const cfg = vscode.workspace.getConfiguration('gearlynxDebug.keymap');
-        const buttons = ['up', 'down', 'left', 'right', 'a', 'b', 'option1', 'option2', 'pause'];
-        for (const btn of buttons) {
-            const key = cfg.get<string>(btn, '');
-            if (key) this.keymap.set(key, btn);
-        }
-    }
-
-    private async handleKeyInput(key: string, action: string): Promise<void> {
-        if (!this.monitor || !this.monitor.isConnected()) return;
-        const button = this.keymap.get(key);
-        if (!button) return;
-        try { await this.monitor.controllerButton(button, action); } catch { /* ignore */ }
     }
 
     private getHtml(): string {
@@ -196,7 +195,7 @@ export class ScreenViewProvider implements vscode.WebviewViewProvider {
 
     public setConnection(monitor: DebugMonitorClient): void {
         this.monitor = monitor;
-        this.loadKeymap();
+        this.keymap = loadKeymap();
         this.subscribeStream();
     }
 
@@ -219,7 +218,7 @@ export class ScreenViewProvider implements vscode.WebviewViewProvider {
 
         webviewView.webview.onDidReceiveMessage(async (msg) => {
             if (msg.command === 'keydown' || msg.command === 'keyup') {
-                await this.handleKeyInput(msg.key, msg.command === 'keydown' ? 'press' : 'release');
+                await sendKeyInput(this.monitor, this.keymap, msg.key, msg.command === 'keydown' ? 'press' : 'release');
             }
         });
 
@@ -257,22 +256,6 @@ export class ScreenViewProvider implements vscode.WebviewViewProvider {
         }
         this.frameHandler = null;
         this.statusHandler = null;
-    }
-
-    private loadKeymap(): void {
-        this.keymap.clear();
-        const cfg = vscode.workspace.getConfiguration('gearlynxDebug.keymap');
-        for (const btn of ['up', 'down', 'left', 'right', 'a', 'b', 'option1', 'option2', 'pause']) {
-            const key = cfg.get<string>(btn, '');
-            if (key) this.keymap.set(key, btn);
-        }
-    }
-
-    private async handleKeyInput(key: string, action: string): Promise<void> {
-        if (!this.monitor || !this.monitor.isConnected()) return;
-        const button = this.keymap.get(key);
-        if (!button) return;
-        try { await this.monitor.controllerButton(button, action); } catch { /* ignore */ }
     }
 
     private getHtml(): string {

@@ -54,10 +54,10 @@ export class LynxDebugSession extends LoggingDebugSession {
     private breakpointConditions = new Map<number, string>();
     // Track logpoint messages (address -> log message template)
     private breakpointLogMessages = new Map<number, string>();
-    // Track data breakpoints (address -> type)
-    private dataBreakpoints = new Map<number, string>();
-    // Track function breakpoints (address -> function name)
-    private functionBreakpoints = new Map<number, string>();
+    // Track data breakpoints (address set)
+    private dataBreakpoints = new Set<number>();
+    // Track function breakpoints (address set)
+    private functionBreakpoints = new Set<number>();
     // Track instruction breakpoints (address set)
     private instructionBreakpoints = new Set<number>();
     // Saved launch args for restart
@@ -508,16 +508,16 @@ export class LynxDebugSession extends LoggingDebugSession {
         try {
             if (scopeName === 'registers') {
                 const regs = await this.monitor.getRegisters();
-                const pcVar = this.makeVar('PC', regs.pc, 16, 4);
+                const pcVar = this.makeVar('PC', regs.pc, 4);
                 (pcVar as unknown as DebugProtocol.Variable).memoryReference = regs.pc.toString();
                 variables.push(pcVar);
-                variables.push(this.makeVar('A', regs.a, 16, 2));
-                variables.push(this.makeVar('X', regs.x, 16, 2));
-                variables.push(this.makeVar('Y', regs.y, 16, 2));
-                const spVar = this.makeVar('S', regs.s, 16, 2);
+                variables.push(this.makeVar('A', regs.a, 2));
+                variables.push(this.makeVar('X', regs.x, 2));
+                variables.push(this.makeVar('Y', regs.y, 2));
+                const spVar = this.makeVar('S', regs.s, 2);
                 (spVar as unknown as DebugProtocol.Variable).memoryReference = (0x0100 + regs.s).toString();
                 variables.push(spVar);
-                variables.push(this.makeVar('P', regs.p, 16, 2));
+                variables.push(this.makeVar('P', regs.p, 2));
                 // Memory region shortcuts
                 const ramVar = new Variable('RAM', '$0000-$FFFF', 0);
                 (ramVar as unknown as DebugProtocol.Variable).memoryReference = '0';
@@ -1130,16 +1130,6 @@ export class LynxDebugSession extends LoggingDebugSession {
             if (sym) address = sym.address;
         }
 
-        // Check if variablesReference points to a variable with memoryReference
-        if (address === undefined && args.variablesReference) {
-            // Try to parse from the variable name (format: "varname")
-            // The memoryReference was set on the variable, but DAP passes the name here
-            if (this.debugInfo) {
-                const sym = this.debugInfo.findSymbol(name);
-                if (sym) address = sym.address;
-            }
-        }
-
         if (address !== undefined) {
             const addrStr = `$${address.toString(16).toUpperCase().padStart(4, '0')}`;
             response.body = {
@@ -1163,7 +1153,7 @@ export class LynxDebugSession extends LoggingDebugSession {
         args: DebugProtocol.SetDataBreakpointsArguments
     ): Promise<void> {
         // Clear existing data breakpoints
-        for (const [addr, _type] of this.dataBreakpoints) {
+        for (const addr of this.dataBreakpoints) {
             try {
                 await this.monitor.deleteBreakpoint(addr);
             } catch {
@@ -1191,7 +1181,7 @@ export class LynxDebugSession extends LoggingDebugSession {
 
             try {
                 await this.monitor.setBreakpoint(address, type);
-                this.dataBreakpoints.set(address, type);
+                this.dataBreakpoints.add(address);
                 resultBps.push({ verified: true });
             } catch {
                 resultBps.push({ verified: false });
@@ -1277,7 +1267,7 @@ export class LynxDebugSession extends LoggingDebugSession {
         args: DebugProtocol.SetFunctionBreakpointsArguments
     ): Promise<void> {
         // Clear existing function breakpoints
-        for (const [addr] of this.functionBreakpoints) {
+        for (const addr of this.functionBreakpoints) {
             try { await this.monitor.deleteBreakpoint(addr); } catch { /* ignore */ }
         }
         this.functionBreakpoints.clear();
@@ -1294,7 +1284,7 @@ export class LynxDebugSession extends LoggingDebugSession {
             if (address !== undefined) {
                 try {
                     await this.monitor.setBreakpoint(address, 'exec');
-                    this.functionBreakpoints.set(address, fbp.name);
+                    this.functionBreakpoints.add(address);
                     if (fbp.condition) {
                         this.breakpointConditions.set(address, fbp.condition);
                     }
@@ -1543,7 +1533,7 @@ export class LynxDebugSession extends LoggingDebugSession {
         return label;
     }
 
-    private makeVar(name: string, value: number, radix: number, width: number): Variable {
+    private makeVar(name: string, value: number, width: number): Variable {
         const hexStr = `$${value.toString(16).toUpperCase().padStart(width, '0')}`;
         return new Variable(name, `${hexStr} (${value})`, 0);
     }
