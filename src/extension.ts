@@ -7,6 +7,7 @@ import { MemoryMapPanel } from './memory_map';
 let overlayStatusBarItem: vscode.StatusBarItem | undefined;
 let activeSession: LynxDebugSession | undefined;
 let screenViewProvider: ScreenViewProvider | undefined;
+let overlayTreeProvider: OverlayTreeProvider | undefined;
 let traceOutputChannel: vscode.OutputChannel | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -28,6 +29,16 @@ export function activate(context: vscode.ExtensionContext): void {
         })
     );
 
+    // Overlay tree view (panel) -- mirrors the status bar / toolbar selector.
+    overlayTreeProvider = new OverlayTreeProvider();
+    context.subscriptions.push(
+        vscode.window.registerTreeDataProvider('gearlynxDebug.overlayView', overlayTreeProvider)
+    );
+    // Internal command invoked by tree items (and reusable elsewhere).
+    context.subscriptions.push(
+        vscode.commands.registerCommand('gearlynxDebug.setOverlay', (name: string | null) => selectOverlay(name))
+    );
+
     // Overlay selector command
     context.subscriptions.push(
         vscode.commands.registerCommand('gearlynxDebug.selectOverlay', async () => {
@@ -39,8 +50,16 @@ export function activate(context: vscode.ExtensionContext): void {
             }
 
             const groups = debugInfo.getOverlayGroups();
-            const items: vscode.QuickPickItem[] = [];
             const currentName = debugInfo.getActiveOverlayName();
+
+            // "None" resets to the unselected state (all segments active). Useful
+            // because overlay code is copied into RAM at runtime and the debugger
+            // cannot know which overlay is currently resident; the user picks.
+            const NONE_LABEL = 'None (no overlay)';
+            const items: vscode.QuickPickItem[] = [{
+                label: NONE_LABEL,
+                description: currentName === null ? '(active)' : '',
+            }];
 
             for (const group of groups) {
                 for (const name of group.segmentNames) {
@@ -56,11 +75,7 @@ export function activate(context: vscode.ExtensionContext): void {
             });
 
             if (picked) {
-                debugInfo.setActiveOverlay(picked.label);
-                updateOverlayStatusBar(picked.label);
-                // Re-emit stopped event so VSCode re-queries stack trace
-                // and repositions the editor to the correct source line
-                activeSession?.refreshStoppedState();
+                selectOverlay(picked.label === NONE_LABEL ? null : picked.label);
             }
         })
     );
@@ -142,6 +157,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.debug.onDidStartDebugSession((session) => {
             if (session.type === 'gearlynx') {
                 updateOverlayStatusBar(null);
+                syncOverlayUi();
 
                 if (activeSession) {
                     const monitor = activeSession.getMonitor();
@@ -173,6 +189,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 disconnectSharedStream();
                 screenViewProvider?.clearConnection();
                 activeSession = undefined;
+                syncOverlayUi();
             }
         })
     );
@@ -195,12 +212,40 @@ function updateOverlayStatusBar(overlayName: string | null): void {
     overlayStatusBarItem.show();
 }
 
+// Single source of truth for changing the active overlay. Every surface (status
+// bar quickpick, debug-toolbar button, panel tree) routes through here, so they
+// can never drift out of sync: each just re-reads getActiveOverlayName().
+function selectOverlay(name: string | null): void {
+    const debugInfo = activeSession?.getDebugInfo();
+    if (!debugInfo) return;
+    if (name === null) {
+        debugInfo.clearActiveOverlay();
+    } else {
+        debugInfo.setActiveOverlay(name);
+    }
+    updateOverlayStatusBar(name);
+    overlayTreeProvider?.refresh();
+    // Re-emit stopped event so VSCode re-queries the stack trace and
+    // repositions the editor to the correct source line.
+    activeSession?.refreshStoppedState();
+}
+
+// Refresh overlay UI for the current session: toolbar/tree visibility context
+// key, status bar, and tree contents.
+function syncOverlayUi(): void {
+    const hasOverlays = activeSession?.getDebugInfo()?.hasOverlays() ?? false;
+    void vscode.commands.executeCommand('setContext', 'gearlynxDebug.hasOverlays', hasOverlays);
+    updateOverlayStatusBar(activeSession?.getDebugInfo()?.getActiveOverlayName() || null);
+    overlayTreeProvider?.refresh();
+}
+
 export function setActiveSession(session: LynxDebugSession | undefined): void {
     activeSession = session;
     if (session) {
         const debugInfo = session.getDebugInfo();
         updateOverlayStatusBar(debugInfo?.getActiveOverlayName() || null);
     }
+    syncOverlayUi();
 }
 
 export function deactivate(): void {
@@ -279,5 +324,44 @@ class LynxConfigurationProvider implements vscode.DebugConfigurationProvider {
         }
 
         return config;
+    }
+}
+
+interface OverlayChoice {
+    label: string;
+    // null is the "no overlay" choice (all segments active).
+    value: string | null;
+}
+
+class OverlayTreeProvider implements vscode.TreeDataProvider<OverlayChoice> {
+    private _onDidChangeTreeData = new vscode.EventEmitter<void>();
+    readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+
+    refresh(): void {
+        this._onDidChangeTreeData.fire();
+    }
+
+    getTreeItem(choice: OverlayChoice): vscode.TreeItem {
+        const item = new vscode.TreeItem(choice.label);
+        const active = activeSession?.getDebugInfo()?.getActiveOverlayName() ?? null;
+        item.iconPath = new vscode.ThemeIcon(choice.value === active ? 'check' : 'blank');
+        item.command = {
+            command: 'gearlynxDebug.setOverlay',
+            title: 'Select Overlay',
+            arguments: [choice.value],
+        };
+        return item;
+    }
+
+    getChildren(): OverlayChoice[] {
+        const debugInfo = activeSession?.getDebugInfo();
+        if (!debugInfo || !debugInfo.hasOverlays()) return [];
+        const choices: OverlayChoice[] = [{ label: 'None (no overlay)', value: null }];
+        for (const group of debugInfo.getOverlayGroups()) {
+            for (const name of group.segmentNames) {
+                choices.push({ label: name, value: name });
+            }
+        }
+        return choices;
     }
 }

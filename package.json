@@ -42,7 +42,8 @@
       {
         "command": "gearlynxDebug.selectOverlay",
         "title": "Select Active Overlay",
-        "category": "Gearlynx Debugger"
+        "category": "Gearlynx Debugger",
+        "icon": "$(layers)"
       },
       {
         "command": "gearlynxDebug.showScreen",
@@ -86,6 +87,20 @@
           "id": "gearlynxDebug.screenView",
           "name": "Screen",
           "when": "debugType == 'gearlynx'"
+        },
+        {
+          "type": "tree",
+          "id": "gearlynxDebug.overlayView",
+          "name": "Overlays",
+          "when": "debugType == 'gearlynx' && gearlynxDebug.hasOverlays"
+        }
+      ]
+    },
+    "menus": {
+      "debug/toolBar": [
+        {
+          "command": "gearlynxDebug.selectOverlay",
+          "when": "debugType == 'gearlynx' && gearlynxDebug.hasOverlays"
         }
       ]
     },
