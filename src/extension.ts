@@ -141,6 +141,11 @@ export function activate(context: vscode.ExtensionContext): void {
             if (session.type === 'gearlynx') {
                 syncOverlayUi();
 
+                // Reveal the Screen view (and its panel) on debug start. The
+                // auto-generated <viewId>.focus command works even before the
+                // view has been resolved.
+                void vscode.commands.executeCommand('gearlynxDebug.screenView.focus');
+
                 if (activeSession) {
                     const monitor = activeSession.getMonitor();
                     const streamPort = activeSession.getStreamPort();
