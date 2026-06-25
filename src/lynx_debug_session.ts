@@ -266,6 +266,20 @@ export class LynxDebugSession extends LoggingDebugSession {
             await this.monitor.connect(hostname, port);
             await this.checkProtocol();
             this.sendEvent(new InitializedEvent());
+
+            // Reflect the emulator's actual run state. Unlike launch, an attach
+            // joins an emulator that may already be paused/stopped; without this
+            // the debug UI assumes the target is running and shows only Pause.
+            // Emit a stopped event so the toolbar shows Continue/step controls.
+            try {
+                const status = await this.monitor.getStatus();
+                if (status.paused || status.idle) {
+                    this.sendEvent(new StoppedEvent(status.stop_reason || 'pause', THREAD_ID));
+                }
+            } catch {
+                // Status unavailable -- leave the UI as running.
+            }
+
             this.sendResponse(response);
         } catch (err) {
             response.success = false;
