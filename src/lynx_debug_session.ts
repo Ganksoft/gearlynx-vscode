@@ -1340,10 +1340,12 @@ export class LynxDebugSession extends LoggingDebugSession {
         const sources: DebugProtocol.Source[] = [];
         if (this.debugInfo) {
             const seen = new Set<string>();
-            for (const [, loc] of this.debugInfo.getAllAddressToSource()) {
-                if (!seen.has(loc.source)) {
-                    seen.add(loc.source);
-                    sources.push({ name: path.basename(loc.source), path: loc.source });
+            for (const [, locs] of this.debugInfo.getAllAddressToSource()) {
+                for (const loc of locs) {
+                    if (!seen.has(loc.source)) {
+                        seen.add(loc.source);
+                        sources.push({ name: path.basename(loc.source), path: loc.source });
+                    }
                 }
             }
         }

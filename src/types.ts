@@ -92,7 +92,7 @@ export interface LocalVariable {
 }
 
 export interface DebugInfoData {
-    addressToSource: Map<number, SourceLocation>;
+    addressToSource: Map<number, SourceLocation[]>;
     sourceToAddresses: Map<string, Map<number, number[]>>;
     symbols: DebugSymbol[];
     functions: DebugFunction[];

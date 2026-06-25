@@ -151,8 +151,15 @@ export class Cc65DebugInfo {
     }
 
     private static resolve(data: DbgData, _sourceRoots: string[]): DebugInfoData {
-        const addressToSource = new Map<number, SourceLocation>();
-        const cLineAddrs = new Set<number>();
+        // address -> source candidates, at most one per segment. Overlay segments
+        // share CPU addresses (e.g. GAME_CODE and TITLE_CODE both load at $200),
+        // so a single entry per address would let one overlay's line records
+        // clobber another's. Keeping a candidate per segment lets
+        // findSourceForAddress pick the one whose overlay is active.
+        const addressToSource = new Map<number, SourceLocation[]>();
+        // Tracks which (address, segment) pairs came from a C line, so an
+        // assembly line never overwrites a C line within the same segment.
+        const cLineKeys = new Set<string>();
         const sourceToAddresses = new Map<string, Map<number, number[]>>();
         const symbols: DebugSymbol[] = [];
         const functions: DebugFunction[] = [];
@@ -254,22 +261,27 @@ export class Cc65DebugInfo {
                 // same address; the assembly ones often point at cc65 runtime
                 // files that are not on the user's disk. A C mapping must never
                 // be overwritten by an assembly mapping, or the address resolves
-                // to a missing file and reports as unmapped.
-                const existing = addressToSource.get(addr);
+                // to a missing file and reports as unmapped. This preference is
+                // applied per segment so overlapping overlays keep both entries.
                 const isCLine = (line.type === 1);
-                if (!existing) {
-                    addressToSource.set(addr, loc);
-                    if (isCLine) {
-                        cLineAddrs.add(addr);
-                    }
+                const key = `${addr}:${span.seg}`;
+                let candidates = addressToSource.get(addr);
+                if (!candidates) {
+                    candidates = [];
+                    addressToSource.set(addr, candidates);
+                }
+                const idx = candidates.findIndex(c => c.segmentId === span.seg);
+                if (idx < 0) {
+                    candidates.push(loc);
+                    if (isCLine) cLineKeys.add(key);
                 } else if (isCLine) {
                     // C always wins (and a later C line replaces an earlier one).
-                    addressToSource.set(addr, loc);
-                    cLineAddrs.add(addr);
-                } else if (!cLineAddrs.has(addr)) {
+                    candidates[idx] = loc;
+                    cLineKeys.add(key);
+                } else if (!cLineKeys.has(key)) {
                     // Assembly over assembly: keep last-writer behavior, but never
                     // clobber an address already claimed by a C line.
-                    addressToSource.set(addr, loc);
+                    candidates[idx] = loc;
                 }
 
                 // Source -> addresses map
@@ -360,7 +372,10 @@ export class Cc65DebugInfo {
                     if (size === undefined) continue;
                     const address = sym.val;
                     const endAddress = address + size - 1;
-                    const loc = addressToSource.get(address);
+                    // Pick the source candidate in the function's own segment so
+                    // an overlapping overlay's line record is not used.
+                    const candidates = addressToSource.get(address);
+                    const loc = candidates?.find(c => c.segmentId === sym.seg) ?? candidates?.[0];
                     functions.push({
                         name: csym.name,
                         address,

@@ -54,16 +54,21 @@ export class DebugInfo {
         // on disk. Skipping unresolvable mappings is essential: cc65 emits runtime
         // assembly mappings (e.g. bootldr.s, not on the user's disk) that share
         // addresses with C statements. If such a mapping shadowed the enclosing C
-        // line, the address would report as unmapped during stepping.
+        // line, the address would report as unmapped during stepping. Each address
+        // holds one candidate per segment (overlays share addresses); the active-
+        // segment filter selects the candidate for the currently mapped overlay.
         let best: SourceLocation | null = null;
         let bestAddr = -1;
-        for (const [addr, candidate] of this.data.addressToSource) {
-            if (addr <= address && address <= candidate.addressEnd && addr > bestAddr
-                && this.isSegmentActive(candidate.segmentId)) {
-                const resolved = this.resolveLocation(candidate);
-                if (resolved) {
-                    best = resolved;
-                    bestAddr = addr;
+        for (const [addr, candidates] of this.data.addressToSource) {
+            if (addr > address || addr <= bestAddr) continue;
+            for (const candidate of candidates) {
+                if (address <= candidate.addressEnd && this.isSegmentActive(candidate.segmentId)) {
+                    const resolved = this.resolveLocation(candidate);
+                    if (resolved) {
+                        best = resolved;
+                        bestAddr = addr;
+                        break;
+                    }
                 }
             }
         }
@@ -109,7 +114,7 @@ export class DebugInfo {
         return this.data.functions;
     }
 
-    getAllAddressToSource(): Map<number, SourceLocation> {
+    getAllAddressToSource(): Map<number, SourceLocation[]> {
         return this.data.addressToSource;
     }
 
@@ -180,7 +185,7 @@ export class DebugInfo {
     private findNearestInMap(
         map: Map<number, number[]>,
         targetLine: number,
-        _sourcePath: string
+        sourcePath: string
     ): SourceLocation | null {
         // Exact line match -- use the lowest address (the line's entry point).
         // A line maps to multiple addresses and the array is in parse order, not
@@ -188,7 +193,7 @@ export class DebugInfo {
         // breakpoint must land at the line's first instruction.
         const addrs = map.get(targetLine);
         if (addrs && addrs.length > 0) {
-            const loc = this.data.addressToSource.get(Math.min(...addrs));
+            const loc = this.pickCandidate(Math.min(...addrs), sourcePath);
             if (loc) return this.resolveLocation(loc);
         }
 
@@ -203,13 +208,22 @@ export class DebugInfo {
         if (bestLine >= 0) {
             const nearAddrs = map.get(bestLine);
             if (nearAddrs && nearAddrs.length > 0) {
-                const loc = this.data.addressToSource.get(Math.min(...nearAddrs));
+                const loc = this.pickCandidate(Math.min(...nearAddrs), sourcePath);
                 if (loc) return this.resolveLocation(loc);
             }
         }
 
         return null;
     }
+
+    // Pick the source candidate at an address that belongs to the given source
+    // file (overlapping overlays can register several candidates per address).
+    private pickCandidate(address: number, sourcePath: string): SourceLocation | null {
+        const candidates = this.data.addressToSource.get(address);
+        if (!candidates || candidates.length === 0) return null;
+        return candidates.find(c => this.normalizePath(c.source) === sourcePath) ?? candidates[0];
+    }
+
 
     private resolveLocation(loc: SourceLocation): SourceLocation | null {
         const resolved = this.resolveSourcePath(loc.source);
