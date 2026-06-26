@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { LynxDebugSession } from './lynx_debug_session';
+import { expandTilde } from './paths';
 import { ScreenViewProvider, connectSharedStream, disconnectSharedStream } from './webviews';
 import { MemoryMapPanel } from './memory_map';
 
@@ -245,7 +246,7 @@ class LynxConfigurationProvider implements vscode.DebugConfigurationProvider {
             const settings = vscode.workspace.getConfiguration('gearlynxDebug');
             const globalPath = settings.get<string>('gearlynxPath', '');
             if (globalPath) {
-                config.gearlynxPath = globalPath;
+                config.gearlynxPath = expandTilde(globalPath);
             }
         }
 
@@ -258,6 +259,9 @@ class LynxConfigurationProvider implements vscode.DebugConfigurationProvider {
         _token?: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.DebugConfiguration> {
         // Auto-detect debug file after ${workspaceFolder} etc. are resolved
+        if (config.rom) {
+            config.rom = expandTilde(config.rom);
+        }
         if (config.rom && !config.debugFile) {
             const baseName = config.rom.replace(/\.[^.]+$/, '');
             // Try common naming patterns:

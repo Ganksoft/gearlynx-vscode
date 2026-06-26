@@ -20,6 +20,7 @@ import { DebugMonitorClient, CLIENT_PROTOCOL_VERSION } from './debug_monitor_cli
 import { DebugInfo } from './debug_info';
 import { setActiveSession } from './extension';
 import { CpuRegisters } from './types';
+import { expandTilde } from './paths';
 
 const THREAD_ID = 1;
 
@@ -166,6 +167,12 @@ export class LynxDebugSession extends LoggingDebugSession {
         response: DebugProtocol.LaunchResponse,
         args: LaunchRequestArguments
     ): Promise<void> {
+        // Expand a leading "~" in user-supplied paths; Node does not do this.
+        args.rom = expandTilde(args.rom) as string;
+        args.debugFile = expandTilde(args.debugFile);
+        args.gearlynxPath = expandTilde(args.gearlynxPath);
+        args.sourceRoots = args.sourceRoots?.map((r) => expandTilde(r) as string);
+
         this.launchArgs = args;
         this.traceSteps = args.traceSteps || false;
         try {
@@ -252,6 +259,10 @@ export class LynxDebugSession extends LoggingDebugSession {
         response: DebugProtocol.AttachResponse,
         args: AttachRequestArguments
     ): Promise<void> {
+        // Expand a leading "~" in user-supplied paths; Node does not do this.
+        args.debugFile = expandTilde(args.debugFile);
+        args.sourceRoots = args.sourceRoots?.map((r) => expandTilde(r) as string);
+
         try {
             this.traceSteps = args.traceSteps || false;
             if (args.debugFile) {
