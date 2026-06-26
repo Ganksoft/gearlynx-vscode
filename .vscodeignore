@@ -10,6 +10,8 @@ eslint.config.mjs
 .vscodeignore
 package-lock.json
 AGENTS.md
+docs/**
+scripts/**
 
 # Source maps and TS declaration files
 out/**/*.map

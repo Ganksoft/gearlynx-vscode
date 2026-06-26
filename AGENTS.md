@@ -27,7 +27,7 @@ the Debug Adapter Protocol (DAP) and drives the
 | `src/types.ts` | Shared TypeScript interfaces for the wire protocol and debug info. |
 | `package.json` | Extension manifest: version, publisher, contributed commands/settings/debugger. |
 | `.github/workflows/ci.yml` | CI: compile + lint + package on every PR/push to `main`. |
-| `.github/workflows/release.yml` | Release: on a `v*` tag, publish to VS Marketplace + Open VSX and attach the `.vsix`. |
+| `.github/workflows/release.yml` | Release: on a `v*` tag, publish to VS Marketplace and attach the `.vsix`. |
 
 Compiled output (`out/`) and `node_modules/` are git-ignored; never commit them.
 
@@ -88,8 +88,11 @@ ID via GitHub OIDC** (no PAT): the job runs in the `release` environment, calls
 **variables**, then `vsce publish --azure-credential`. The matching app
 registration must have a federated credential for
 `repo:ganksoft/gearlynx-vscode:environment:release` and be a member of the
-`ganksoft` Marketplace publisher. Open VSX still uses the `OVSX_PAT` repository
-secret. Do not put tokens in code or commits.
+`ganksoft` Marketplace publisher. Do not put tokens in code or commits.
+
+The full one-time identity setup (app registration, federated credential,
+Azure DevOps provisioning, publisher membership) and the gotchas are documented
+in `docs/PUBLISHING.md`; `scripts/setup-marketplace-oidc.ps1` automates it.
 
 ## Guardrails
 

@@ -44,11 +44,6 @@ jobs:
       - name: Publish to Visual Studio Marketplace
         run: npx @vscode/vsce publish --azure-credential --packagePath gearlynx-debugger.vsix
 
-      - name: Publish to Open VSX
-        run: npx ovsx publish gearlynx-debugger.vsix
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
-
       - name: Attach VSIX to GitHub Release
         uses: softprops/action-gh-release@v3
         with:
