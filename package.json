@@ -12,12 +12,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Ganksoft/gearlynx-vscode.git"
+    "url": "https://github.com/ganksoft/gearlynx-vscode.git"
   },
   "bugs": {
-    "url": "https://github.com/Ganksoft/gearlynx-vscode/issues"
+    "url": "https://github.com/ganksoft/gearlynx-vscode/issues"
   },
-  "homepage": "https://github.com/Ganksoft/gearlynx-vscode#readme",
+  "homepage": "https://github.com/ganksoft/gearlynx-vscode#readme",
   "keywords": [
     "atari",
     "lynx",

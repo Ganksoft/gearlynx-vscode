@@ -87,7 +87,7 @@ ID via GitHub OIDC** (no PAT): the job runs in the `release` environment, calls
 `azure/login` with the `AZURE_CLIENT_ID` and `AZURE_TENANT_ID` repository
 **variables**, then `vsce publish --azure-credential`. The matching app
 registration must have a federated credential for
-`repo:Ganksoft/gearlynx-vscode:environment:release` and be a member of the
+`repo:ganksoft/gearlynx-vscode:environment:release` and be a member of the
 `ganksoft` Marketplace publisher. Open VSX still uses the `OVSX_PAT` repository
 secret. Do not put tokens in code or commits.
 
