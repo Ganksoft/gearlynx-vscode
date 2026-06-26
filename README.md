@@ -1,13 +1,5 @@
 # Gearlynx Debugger - Atari Lynx Source-Level Debugger
 
-> [!WARNING]
-> **Not usable yet.** This extension depends on Gearlynx's debug-monitor support
-> (the `--debug-monitor` interface and protocol handshake), which currently lives
-> only on the `feature/vscplugin` branch of [Gearlynx](https://github.com/DrHelius/Gearlynx)
-> and has **not** been merged into a released build. Until those changes land in
-> mainline Gearlynx, the extension cannot connect to the emulator and is not
-> functional. Published here for development and review only.
-
 A Visual Studio Code debugger extension for Atari Lynx games using the [Gearlynx](https://github.com/DrHelius/Gearlynx) emulator. Supports C and 6502 assembly source-level debugging for games compiled with [cc65](https://cc65.github.io/).
 
 ![Gearlynx Debugger debugging an Atari Lynx game in VSCode: live screen viewer, CPU registers, watch expressions, call stack, and a source breakpoint](images/glvs-sample.png)
@@ -65,11 +57,13 @@ A Visual Studio Code debugger extension for Atari Lynx games using the [Gearlynx
 
 - **Memory Map visualization**: canvas-based address space view showing all segments with overlay column layout
 - **Trace Logger**: start/stop CPU trace logging, view output in the "Lynx Trace Log" output panel
-- **Loaded Sources**: browse all source files known to the debugger
+- **Loaded Sources**: all source files known to the debugger are listed in VSCode's built-in "Loaded Scripts" view (Run and Debug sidebar)
+
+![Lynx Memory Map: address space view with code, data, RODATA, and BSS segments, overlay banks (GAME, TITLE, BONUS) shown in parallel columns, and hardware regions (Suzy, Mikey, BIOS)](images/memory-map.png)
 
 ## Requirements
 
-- [Gearlynx](https://github.com/DrHelius/Gearlynx) emulator built with `--debug-monitor` support
+- [Gearlynx](https://github.com/DrHelius/Gearlynx) **1.2.15 or later** -- the first release with the `--debug-monitor` support this extension requires
 - [cc65](https://cc65.github.io/) toolchain for compiling Lynx games with debug info
 - VSCode 1.87.0 or later
 
@@ -101,14 +95,15 @@ the extension at the host/port.
 
 The extension and the emulator negotiate a debug-monitor **protocol version** on
 connect. Gearlynx Debugger 0.1.x speaks **protocol version 1**; it requires a Gearlynx
-build whose `handshake` reports the same version. On a mismatch the extension
+build whose `handshake` reports the same version. Debug-monitor support first
+shipped in **Gearlynx 1.2.15**. On a mismatch the extension
 warns but still attempts to debug. The wire format and CLI surface are documented
 in [PROTOCOL.md](https://github.com/DrHelius/Gearlynx/blob/main/PROTOCOL.md) in
 the Gearlynx repository.
 
 | Gearlynx Debugger | Debug-monitor protocol | Gearlynx |
 |-----------|------------------------|----------|
-| 0.1.x     | 1                      | builds reporting protocolVersion 1 |
+| 0.1.x     | 1                      | 1.2.15 or later (protocolVersion 1) |
 
 ## Quick Start
 
@@ -198,6 +193,8 @@ gearlynx --debug-monitor --debug-monitor-port 7000 game.lnx
 | `traceSteps` | No | `false` | Log source-line stepping decisions to the Debug Console |
 
 ## Settings
+
+All settings are also editable in the VSCode Settings UI under **Extensions -> Gearlynx Debugger**.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
