@@ -82,8 +82,14 @@ Additive changes (new optional fields/commands) do not require a bump.
 3. Add a `CHANGELOG.md` entry.
 4. Commit, then tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 
-The release workflow publishes to both marketplaces using the `VSCE_PAT` and
-`OVSX_PAT` repository secrets. Do not put tokens in code or commits.
+The release workflow publishes to the VS Marketplace using **Microsoft Entra
+ID via GitHub OIDC** (no PAT): the job runs in the `release` environment, calls
+`azure/login` with the `AZURE_CLIENT_ID` and `AZURE_TENANT_ID` repository
+**variables**, then `vsce publish --azure-credential`. The matching app
+registration must have a federated credential for
+`repo:Ganksoft/gearlynx-vscode:environment:release` and be a member of the
+`ganksoft` Marketplace publisher. Open VSX still uses the `OVSX_PAT` repository
+secret. Do not put tokens in code or commits.
 
 ## Guardrails
 
