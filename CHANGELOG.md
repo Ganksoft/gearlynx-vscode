@@ -5,6 +5,15 @@ All notable changes to the Gearlynx Debugger extension are documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-06-26
+
+### Fixed
+
+- Expand a leading `~` in launch/attach paths (`rom`, `debugFile`, `gearlynxPath`,
+  `sourceRoots`) and in the `gearlynxDebug.gearlynxPath` setting. Node does not
+  perform shell tilde expansion, so paths like `~/gearlynx` previously failed to
+  resolve on Linux and macOS.
+
 ## [0.1.0] - 2026-06-25
 
 ### Added
